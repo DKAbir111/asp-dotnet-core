@@ -1,41 +1,92 @@
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+// 🔥 Swagger services add
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
 
-app.UseHttpsRedirection();
 
-var summaries = new[]
+var categories = new List<Category>();
+//get all categories
+app.MapGet("/api/categories", () =>
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+    return Results.Ok(categories);
+});
 
-app.MapGet("/weatherforecast", () =>
+
+//post category
+app.MapPost("/api/categories", ([FromBody] Category category) =>
 {
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+    var newCategory = new Category
+    {
+        CategoryId = Guid.NewGuid(),
+        Name = category.Name,
+        Description = category.Description,
+        CreatedAt = DateTime.UtcNow
+    };
+
+    categories.Add(newCategory);
+    return Results.Created($"/api/categories/{newCategory.CategoryId}", newCategory);
+});
+
+
+//get category by id
+app.MapGet("/api/categories/{id}", (Guid id) =>
+{
+    var category = categories.FirstOrDefault(c => c.CategoryId == id);
+    if (category == null)
+    {
+        return Results.NotFound();
+    }
+    return Results.Ok(category);
+});
+
+
+//delete category by id
+app.MapDelete("/api/categories/{id}", (Guid id) =>
+{
+    var category = categories.FirstOrDefault(c => c.CategoryId == id);
+    if (category == null)
+    {
+        return Results.NotFound();
+    }
+    categories.Remove(category);
+    return Results.NoContent();
+});
+
+//put category by id
+app.MapPut("/api/categories/{id}", (Guid id, [FromBody] Category updatedCategory) =>
+{
+    var category = categories.FirstOrDefault(c => c.CategoryId == id);
+    if (category == null)
+    {
+        return Results.NotFound();
+    }
+    category = category with
+    {
+        Name = updatedCategory.Name,
+        Description = updatedCategory.Description
+    };
+    return Results.Ok(category);
+});
+
+// 🔥 Swagger middleware
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.Run();
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
+
+public record Category
 {
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+    public Guid CategoryId { get; init; }
+    public string? Name { get; init; }
+    public string? Description { get; init; }
+
+    public DateTime CreatedAt { get; init; }
 }
