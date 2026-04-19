@@ -8,10 +8,17 @@ namespace MyApp.Namespace
     public class ValueController : ControllerBase
     {
 
-        [HttpGet("hello")]
+        [HttpGet]
         public IActionResult Get()
         {
             return Ok(new string[] { "value1", "value2" });
+        }
+
+
+        [HttpGet("{id}")]
+        public IActionResult Get(int id)
+        {
+            return Ok($"value{id}");
         }
     }
 }
