@@ -22,6 +22,8 @@ app.MapGet("/api/categories", () =>
 //post category
 app.MapPost("/api/categories", ([FromBody] Category category) =>
 {
+
+
     var newCategory = new Category
     {
         CategoryId = Guid.NewGuid(),
@@ -29,6 +31,15 @@ app.MapPost("/api/categories", ([FromBody] Category category) =>
         Description = category.Description,
         CreatedAt = DateTime.UtcNow
     };
+
+    if (string.IsNullOrEmpty(newCategory.Name) || string.IsNullOrEmpty(newCategory.Description))
+    {
+        return Results.BadRequest("Category name and description are required.");
+    }
+    if (categories.Any(c => c.Name != null && c.Name.Equals(newCategory.Name, StringComparison.OrdinalIgnoreCase)))
+    {
+        return Results.Conflict("A category with the same name already exists.");
+    }
 
     categories.Add(newCategory);
     return Results.Created($"/api/categories/{newCategory.CategoryId}", newCategory);
@@ -74,6 +85,19 @@ app.MapPut("/api/categories/{id}", (Guid id, [FromBody] Category updatedCategory
     };
     return Results.Ok(category);
 });
+
+
+//search categories by name
+app.MapGet("/api/categories/search", ([FromQuery] string name) =>
+{
+    var matchedCategories = categories
+        .Where(c => c.Name != null &&
+                    c.Name.Contains(name, StringComparison.OrdinalIgnoreCase))
+        .ToList();
+
+    return Results.Ok(matchedCategories);
+});
+
 
 // 🔥 Swagger middleware
 app.UseSwagger();
