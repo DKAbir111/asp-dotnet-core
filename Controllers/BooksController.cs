@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using asp_dotnet_core.Models;
+
+using BookStore.Data.Interfaces;
+using BookStore.Data.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.VisualBasic;
 
@@ -13,45 +16,12 @@ namespace asp_dotnet_core.Controllers
     public class BooksController : ControllerBase
     {
 
-        public List<Books> books = new List<Books>
-        {
-            new Books
-            {
-                Id=Guid.NewGuid(),
-                Title="The Great Gatsby",
-                Author="F. Scott Fitzgerald",
-                Category="Classic",
-                PublicationYear=new DateTime(1925,4,10)
-            },
-            new Books
-            {
-                Id=Guid.NewGuid(),
-                Title="To Kill a Mockingbird",
-                Author="Harper Lee",
-                Category="Classic",
-                PublicationYear=new DateTime(1960,7,11)
-            },
-            new Books
-            {
-                Id=Guid.NewGuid(),
-                Title="1984",
-                Author="George Orwell",
-                Category="Dystopian",
-                PublicationYear=new DateTime(1949,6,8)
-            }
-        };
-
-
-
+        private BookRepository books = new BookRepository();
         //get all books => api/books
         [HttpGet]
         public IActionResult GetBooks()
         {
-            if (books == null || books.Count == 0)
-            {
-                return NotFound("No books found.");
-            }
-            return Ok(books);
+            return Ok(books.GetAllBooks());
         }
 
 
@@ -59,14 +29,13 @@ namespace asp_dotnet_core.Controllers
         [HttpGet("{id}")]
         public IActionResult GetBookById(Guid id)
         {
-            var book = books.FirstOrDefault(b => b.Id == id);
+            var book = books.GetBookById(id);
             if (book == null)
             {
                 return NotFound($"Book with id {id} not found.");
             }
             return Ok(book);
         }
-
 
     }
 }
